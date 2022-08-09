@@ -30,8 +30,7 @@ end
 
 def run_question(question, results) do
   {answer_choice, results} = get_answer_tuple(results)
-  question_option = get_question_option(question.options, answer_choice)
-  check_for_errors(question_option, results)
+  check_for_errors(question, answer_choice, results)
   Map.put(results, :question_index, results.question_index + 1)
 end
 
@@ -41,18 +40,21 @@ def get_answer_tuple(results) do
    {ans, results}
 end
 
-def check_for_errors(question_option, results) do
+def check_for_errors(question, answer_choice, results) do
   error = false
-
   if results.terminus == true do
     error = "was answered even though a previous response idicated that the questions were complete"
   end
 
-  case question_option do
-    nil -> error = "has an answer that is not on the list of valid answers"
+  case get_question_option(question.options, answer_choice) do
+
+    nil ->
+      error = "has an answer that is not on the list of valid answers"
+
     :blank_answer -> error = "was not answered"
+
     other_option -> results =
-      if Map.get(question_option, :complete_if_selected) do
+      if Map.get(other_option, :complete_if_selected) do
         Map.put(results, :terminus, true)
       end
   end
@@ -60,7 +62,8 @@ def check_for_errors(question_option, results) do
   if error do
     Map.put(results.error_message, String.to_atom("q#{results.questions_index}"), error)
   end
-  error
+
+  Map.put(results, :error_message, results.error_message)
 end
 
 def get_question_option(_, :blank_answer) do
