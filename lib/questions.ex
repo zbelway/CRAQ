@@ -1,6 +1,6 @@
 defmodule Questions do
   @moduledoc """
-    This are the CRAQ questions that will be asked.
+    CRAQ questions and answers can be inputted directly into the terminal or called from this file
   """
 @type text :: String.t()
 
