@@ -3,75 +3,77 @@ defmodule Craq do
   Documentation for `Craq`.
   """
 @type results :: %{
-questions_index: integer(),
+pass: boolean(),
+question_index: integer(),
 error_message: map(),
 terminus: boolean(),
 answer: map()
 }
 
-def generate(questions, answers) do
-  run_answer(questions, answers)
+@spec generate(map(), list(map())) :: list(map())
+def generate(questions, answers) when is_list(answers) == true do
+  Enum.map(answers, fn answer -> generate(questions, answer) end)
 end
 
-def run_answer(questions, answer) do
-  results = %{
-    question_index: 0,
-    error_message: %{},
-    terminus: false,
-    answer: answer
-  }
-  Enum.each(questions, fn question -> run_question(question, results) end)
-  if Enum.empty?(results.error_message) do
-    IO.puts("passed!")
+def generate(questions, answer) do
+  results = init_results(answer)
+
+  results = Enum.reduce(questions, results, &run_question(&1, &2))
+
+  %{pass: Map.get(results, :pass), error_message: Map.get(results, :error_message)}
+end
+
+def init_results(answer) do
+  %{
+  pass: true,
+  answers: answer,
+  question_index: 0,
+  error_message: %{},
+  terminus: false
+}
+end
+
+def run_question(_, %{terminus: already_done} = results) when already_done == true do
+  if Map.get(results.answers, String.to_atom("q#{results.question_index}")) do
+    results = Map.put(results, :pass, false)
+    error_message = Map.put(results.error_message, String.to_atom("q#{results.question_index}"), "was answered even though a previous response idicated that the questions were complete")
+    Map.put(results, :error_message, error_message)
   else
-    IO.puts(results.error_message)
+    results
   end
 end
 
 def run_question(question, results) do
-  {answer_choice, results} = get_answer_tuple(results)
-  check_for_errors(question, answer_choice, results)
+  answer_choice = Map.get(results.answers, String.to_atom("q#{results.question_index}"), :blank_answer)
+
+  results = get_question_option(question, results, answer_choice)
+
   Map.put(results, :question_index, results.question_index + 1)
 end
 
-@spec get_answer_tuple(results()) :: tuple()
-def get_answer_tuple(results) do
-   ans = Map.get(results.answer, String.to_atom("q#{results.question_index}"))
-   {ans, results}
+def get_question_option(_, results, answer_choice) when answer_choice == :blank_answer do
+  results = Map.put(results, :pass, false)
+  error_message = Map.put(results.error_message, String.to_atom("q#{results.question_index}"), "was not answered")
+  Map.put(results, :error_message, error_message)
 end
 
-def check_for_errors(question, answer_choice, results) do
-  error = false
-  if results.terminus == true do
-    error = "was answered even though a previous response idicated that the questions were complete"
-  end
-
-  case get_question_option(question.options, answer_choice) do
-
-    nil ->
-      error = "has an answer that is not on the list of valid answers"
-
-    :blank_answer -> error = "was not answered"
-
-    other_option -> results =
-      if Map.get(other_option, :complete_if_selected) do
-        Map.put(results, :terminus, true)
-      end
-  end
-
-  if error do
-    Map.put(results.error_message, String.to_atom("q#{results.questions_index}"), error)
-  end
-
-  Map.put(results, :error_message, results.error_message)
+def get_question_option(question, results, answer_choice) do
+  option = Enum.at(question.options, answer_choice)
+  evaluate_option(results, option)
 end
 
-def get_question_option(_, :blank_answer) do
-  :blank_answer
+def evaluate_option(results, option) when option == nil do
+  results = Map.put(results, :pass, false)
+  error_message = Map.put(results.error_message, String.to_atom("q#{results.question_index}"), "has an answer that is not on the list of valid answers")
+  Map.put(results, :error_message, error_message)
 end
 
-def get_question_option(options, answer_choice) do
-  Enum.at(options, answer_choice)
+def evaluate_option(results, option) do
+  if Map.get(option, :complete_if_selected) do
+    Map.put(results, :terminus, true)
+  else
+    results
+  end
 end
 
 end
