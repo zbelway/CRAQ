@@ -1,7 +1,7 @@
 # CRAQ Question Validation
 Change Request Acceptance Questions (CRAQ) are a set of questions that must be answered by any user proposing a change request. The questions can be different depending on each company's internal process and must be satisfactorily answered in order for a change request to proceed to approval.
 
-Basic Requirements
+**Basic Requirements**
 
 Questions are defined using an array of maps, and look like this:
 
@@ -33,7 +33,7 @@ Some examples of invalid answers to the above question set would be:
 %{q0: 3}
 ```
 
-Terminal Questions
+**Terminal Questions**
 
 There is one more requirement for question set validation, which is that not all questions need to be answered in all cases.
 
@@ -67,9 +67,12 @@ For options that have complete_if_selected set to true, if that option is select
 
 # Valid because a terminal answer is chosen to the first question,
 # so an answer to the second question is not required:
-%{q0: 1} 
+%{q0: 1}
+```
+
 And here are some invalid answers to the second question set:
 
+```elixir
 # Invalid because there are no answers
 %{}
 
@@ -82,7 +85,7 @@ And here are some invalid answers to the second question set:
 %{q0: 1, q1: 0}
 ```
 
-Errors
+**Errors**
 
 In order to report back to the user what the problems with their answers were, we need to generate an errors map that looks like this:
 
@@ -92,8 +95,11 @@ In order to report back to the user what the problems with their answers were, w
   q1: "was not answered",
   q2: "was answered even though a previous response indicated that the questions were complete"
 }
-These are the only three error messages that the validator needs to produce.
 ```
+
+These are the only three error messages that the validator needs to produce.
+
+Full tests cases (in ruby) https://gist.github.com/alexspeller/26d540731893141ab520f1c65fb2232e
 
 ## Installation
 
