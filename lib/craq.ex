@@ -1,18 +1,19 @@
 defmodule Craq do
   @moduledoc """
-  Documentation for `Craq`.
+  Change Request Acceptance Questions are inputted along with the users answer.
+  This module validates the user's answers and responds either with a pass or eith an error message.
+
   """
 
   @doc """
-    Change Request Acceptance Questions are inputted along with the users answer.
-    This module validates the user's answers and responds either with a pass or eith an error message.
+  This function will test a single answer or a list of answers against the questions.
 
   ## Examples
 
     iex> questions = [%{text: "What is the meaning of life?",
-    ...>  options: [%{ text: "41" }, %{ text: "42", complete_if_selected: true }]},
-    ...>  %{text: "Why did you not select 42 as the answer to the previous question?",
-    ...>  options: [%{ text: "I'd far rather be happy than right any day" },%{ text: "I don't get that reference" }]}]
+    ...> options: [%{ text: "41" }, %{ text: "42", complete_if_selected: true }]},
+    ...> %{text: "Why did you not select 42 as the answer to the previous question?",
+    ...> options: [%{ text: "I'd far rather be happy than right any day" },%{ text: "I don't get that reference" }]}]
     iex> answers = %{q0: 0, q1: 0}
     iex> Craq.generate(questions, answers)
     %{pass: true}
@@ -43,14 +44,6 @@ defmodule Craq do
       %{error_message: %{q0: "was not answered"}, pass: false}
     ]
   """
-@type results :: %{
-pass: boolean(),
-question_index: integer(),
-error_message: map(),
-terminus: boolean(),
-answer: map()
-}
-
 @spec generate(map(), list(map())) :: list(map())
 def generate(questions, answers) when is_list(answers) == true do
   Enum.map(answers, fn answer -> generate(questions, answer) end)
@@ -58,10 +51,17 @@ end
 
 def generate(questions, answer) do
   results = init_results(answer)
-
   results = Enum.reduce(questions, results, &run_question(&1, &2))
   output_results(results)
 end
+
+@type results :: %{
+  pass: boolean(),
+  question_index: integer(),
+  error_message: map(),
+  terminus: boolean(),
+  answer: map()
+  }
 
 defp output_results(results) when results.pass == true do
   %{pass: Map.get(results, :pass)}
@@ -93,9 +93,7 @@ end
 
 defp run_question(question, results) do
   answer_choice = Map.get(results.answers, String.to_atom("q#{results.question_index}"), :blank_answer)
-
   results = get_question_option(question, results, answer_choice)
-
   Map.put(results, :question_index, results.question_index + 1)
 end
 
